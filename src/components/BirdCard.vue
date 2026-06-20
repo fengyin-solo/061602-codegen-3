@@ -167,6 +167,11 @@ const hatchProgress = computed(() => {
             健康值较低，建议治疗
           </button>
         </div>
+        <div v-if="bird.growthBoostRemaining > 0.01 && !bird.isDead && bird.stage !== 'egg'" class="mt-1 flex items-center gap-1.5 justify-center">
+          <span class="text-[10px] text-emerald-400 flex items-center gap-0.5">
+            <span>📈</span> 加速+{{ Math.round(bird.growthBoostRemaining * 100) }}%
+          </span>
+        </div>
       </div>
     </div>
 

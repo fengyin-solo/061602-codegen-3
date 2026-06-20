@@ -17,6 +17,7 @@ export interface TreatmentRecord {
   timestamp: number
   healthRestored: number
   growthBoost: number
+  wasSick: boolean
 }
 
 export interface Bird {

@@ -240,7 +240,7 @@ const updateBird = (bird: Bird, deltaMs: number, weatherEffect: ReturnType<typeo
     bird.stageProgress += baseProgress * growthBoostMod
 
     if (bird.growthBoostRemaining > 0) {
-      bird.growthBoostRemaining = Math.max(0, bird.growthBoostRemaining - (deltaMs / (DAY_DURATION * 3)))
+      bird.growthBoostRemaining = Math.max(0, bird.growthBoostRemaining - (deltaMs / (DAY_DURATION * 15)))
     }
 
     if (bird.stageProgress * healthMod >= 1) {
@@ -390,8 +390,22 @@ const treatBird = (birdId: string, treatmentType: TreatmentType): boolean => {
 
   bird.growthBoostRemaining += config.growthBoost
 
-  if (bird.isSick && bird.sickUntil) {
-    bird.sickUntil = Math.max(Date.now(), bird.sickUntil - config.sickDurationReduce)
+  const wasSick = bird.isSick
+  if (bird.isSick) {
+    if (treatmentType === 'intensive' || treatmentType === 'premium') {
+      bird.isSick = false
+      bird.sickUntil = undefined
+      addEventLog(`💚 ${bird.name} 的疾病被治愈了！`, 'success')
+    } else if (bird.sickUntil) {
+      bird.sickUntil = bird.sickUntil - config.sickDurationReduce
+      if (bird.sickUntil <= Date.now()) {
+        bird.isSick = false
+        bird.sickUntil = undefined
+        addEventLog(`💚 ${bird.name} 的疾病被治愈了！`, 'success')
+      } else {
+        addEventLog(`⏳ ${bird.name} 的病情有所缓解，还需继续治疗...`, 'warning')
+      }
+    }
   }
 
   bird.treatmentCount++
@@ -405,6 +419,7 @@ const treatBird = (birdId: string, treatmentType: TreatmentType): boolean => {
     timestamp: Date.now(),
     healthRestored: actualHealthRestore,
     growthBoost: config.growthBoost,
+    wasSick,
   }
   state.treatmentRecords.push(record)
   state.totalTreatments++
@@ -413,10 +428,17 @@ const treatBird = (birdId: string, treatmentType: TreatmentType): boolean => {
     if (bird) bird.isTreated = false
   }, 2000)
 
-  addEventLog(
-    `🏥 ${bird.name} 接受了${config.name}治疗，恢复了 ${actualHealthRestore} 点健康！`,
-    'success'
-  )
+  if (wasSick && bird.isSick) {
+    addEventLog(
+      `🏥 ${bird.name} 接受了${config.name}，恢复了 ${actualHealthRestore} 点健康！`,
+      'success'
+    )
+  } else if (!wasSick) {
+    addEventLog(
+      `🏥 ${bird.name} 接受了${config.name}，恢复了 ${actualHealthRestore} 点健康！`,
+      'success'
+    )
+  }
 
   return true
 }
@@ -488,12 +510,14 @@ const calculateScore = (): GameScore => {
   const avgTreatmentCount = aliveBirds.length > 0
     ? aliveBirds.reduce((s, b) => s + b.treatmentCount, 0) / aliveBirds.length
     : 0
-  const sickBirdsTreated = state.treatmentRecords.filter(r => {
+  const sickTreatments = state.treatmentRecords.filter(r => r.wasSick).length
+  const sickCured = state.treatmentRecords.filter(r => {
+    if (!r.wasSick) return false
     const bird = state.birds.find(b => b.id === r.birdId)
-    return bird && !bird.isDead
+    return bird && !bird.isDead && !bird.isSick
   }).length
   const treatmentBonus = Math.min(
-    totalTreatments * 3 + sickBirdsTreated * 8 + avgTreatmentCount * 5,
+    totalTreatments * 2 + sickTreatments * 5 + sickCured * 10 + Math.round(avgTreatmentCount * 3),
     30
   )
 
