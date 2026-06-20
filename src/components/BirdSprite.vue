@@ -8,6 +8,7 @@ const props = defineProps<{
   isDead?: boolean
   isAway?: boolean
   isSick?: boolean
+  isTreated?: boolean
   justHatched?: boolean
   justGrew?: boolean
   justFed?: boolean
@@ -18,6 +19,7 @@ const stageClass = computed(() => {
   if (props.isDead) return 'grayscale opacity-60'
   if (props.justHatched) return 'animate-hatch'
   if (props.justFed) return 'animate-happy'
+  if (props.isTreated) return 'animate-heal'
   if (props.stage === 'egg') return 'animate-wiggle'
   if (props.isAway) return 'opacity-30 translate-x-full transition-all duration-500'
   return 'animate-breath'
@@ -54,6 +56,16 @@ const birdEmoji = computed(() => {
       class="absolute inset-0 flex items-center justify-center pointer-events-none"
     >
       <div class="w-24 h-24 rounded-full bg-yellow-300/40 animate-ping" />
+    </div>
+
+    <div
+      v-if="isTreated"
+      class="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden"
+    >
+      <div class="absolute w-20 h-20 rounded-full bg-emerald-400/30 animate-ping" />
+      <div class="absolute text-emerald-300 animate-float-up text-xl">✨</div>
+      <div class="absolute text-emerald-300 animate-float-up text-lg" style="animation-delay: 0.1s; left: 30%">💚</div>
+      <div class="absolute text-emerald-300 animate-float-up text-lg" style="animation-delay: 0.2s; right: 30%">✨</div>
     </div>
 
     <div

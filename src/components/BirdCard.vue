@@ -16,6 +16,7 @@ const emit = defineEmits<{
   (e: 'feed', amount: number): void
   (e: 'calm'): void
   (e: 'bury'): void
+  (e: 'openClinic'): void
 }>()
 
 const canInteract = computed(() => {
@@ -50,6 +51,7 @@ const hatchProgress = computed(() => {
           :is-dead="bird.isDead"
           :is-away="bird.isAway"
           :is-sick="bird.isSick"
+          :is-treated="bird.isTreated"
           :just-hatched="bird.justHatched"
           :just-grew="bird.justGrew"
           :just-fed="bird.justFed"
@@ -135,13 +137,35 @@ const hatchProgress = computed(() => {
           >
             🤗 安抚
           </button>
+          <button
+            class="px-3 py-1 rounded-lg text-xs font-medium bg-gradient-to-r from-emerald-500 to-teal-500 text-white
+                   hover:from-emerald-400 hover:to-teal-400 active:scale-95 transition-all"
+            @click="emit('openClinic')"
+          >
+            🏥 诊疗
+          </button>
         </div>
 
         <div v-if="bird.isAway && !bird.isDead" class="text-center text-blue-300 text-xs py-2">
           💨 暂时离巢中，天气好就回来~
         </div>
-        <div v-if="bird.isSick && !bird.isDead" class="text-center text-orange-300 text-xs py-1">
-          🤒 生病了，注意健康和保暖！
+        <div v-if="bird.isSick && !bird.isDead" class="text-center py-1">
+          <button
+            class="text-xs text-orange-300 hover:text-orange-200 flex items-center justify-center gap-1 w-full transition-all"
+            @click.stop="emit('openClinic')"
+          >
+            <span class="animate-pulse">🤒</span>
+            生病了，点击前往诊疗站治疗！
+          </button>
+        </div>
+        <div v-else-if="bird.health < 50 && !bird.isDead && bird.stage !== 'egg'" class="text-center py-1">
+          <button
+            class="text-xs text-yellow-300 hover:text-yellow-200 flex items-center justify-center gap-1 w-full transition-all"
+            @click.stop="emit('openClinic')"
+          >
+            <span>💊</span>
+            健康值较低，建议治疗
+          </button>
         </div>
       </div>
     </div>

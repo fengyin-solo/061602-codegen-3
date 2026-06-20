@@ -8,6 +8,17 @@ export type BerryType = 'red' | 'blue' | 'golden'
 
 export type GamePhase = 'start' | 'playing' | 'breeding' | 'ended'
 
+export type TreatmentType = 'basic' | 'standard' | 'intensive' | 'premium'
+
+export interface TreatmentRecord {
+  id: string
+  birdId: string
+  treatmentType: TreatmentType
+  timestamp: number
+  healthRestored: number
+  growthBoost: number
+}
+
 export interface Bird {
   id: string
   name: string
@@ -29,6 +40,10 @@ export interface Bird {
   justHatched?: boolean
   justGrew?: boolean
   justFed?: boolean
+  treatmentCount: number
+  lastTreatedAt?: number
+  growthBoostRemaining: number
+  isTreated?: boolean
 }
 
 export interface Berry {
@@ -56,6 +71,8 @@ export interface GameState {
   eventLog: { id: string; message: string; type: string; timestamp: number }[]
   score?: GameScore
   selectedBirdId?: string
+  treatmentRecords: TreatmentRecord[]
+  totalTreatments: number
 }
 
 export interface GameScore {
@@ -64,6 +81,8 @@ export interface GameScore {
   avgHealth: number
   breedingBonus: number
   personalityBonus: number
+  treatmentBonus: number
+  avgTreatmentCount: number
   stars: number
   rank: string
 }

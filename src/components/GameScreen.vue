@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watch, onMounted } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameState } from '@/composables/useGameState'
 import StatusBar from './StatusBar.vue'
@@ -7,14 +7,37 @@ import NestScene from './NestScene.vue'
 import WeatherOverlay from './WeatherOverlay.vue'
 import BirdCard from './BirdCard.vue'
 import EventModal from './EventModal.vue'
+import ClinicModal from './ClinicModal.vue'
 import { WEATHER_COLORS } from '@/utils/constants'
+import type { TreatmentType } from '@/types/game'
 
 const router = useRouter()
 const {
   state, allAdults, aliveCount,
-  collectBerry, feedBird, calmBird, buryBird,
+  collectBerry, feedBird, calmBird, treatBird, buryBird,
   releaseBirds, keepAndBreed, returnToStart, tryLoadGame,
 } = useGameState()
+
+const clinicVisible = ref(false)
+
+const selectedBird = computed(() => {
+  if (!state.selectedBirdId) return null
+  return state.birds.find(b => b.id === state.selectedBirdId) ?? null
+})
+
+const handleOpenClinic = () => {
+  clinicVisible.value = true
+}
+
+const handleCloseClinic = () => {
+  clinicVisible.value = false
+}
+
+const handleTreat = (treatmentType: TreatmentType) => {
+  if (state.selectedBirdId) {
+    treatBird(state.selectedBirdId, treatmentType)
+  }
+}
 
 onMounted(() => {
   if (state.phase === 'start') {
@@ -73,6 +96,7 @@ const handleCollect = (id: string) => {
               @feed="((amt: number) => feedBird(bird.id, amt))"
               @calm="calmBird(bird.id)"
               @bury="buryBird(bird.id)"
+              @open-clinic="() => { state.selectedBirdId = bird.id; handleOpenClinic(); }"
             />
           </div>
         </div>
@@ -115,8 +139,18 @@ const handleCollect = (id: string) => {
           孵化 {{ state.totalHatched }}
           <span class="mx-1 text-white/30">|</span>
           离世 {{ state.totalDied }}
+          <span class="mx-1 text-white/30">|</span>
+          治疗 {{ state.totalTreatments }} 次
         </div>
       </div>
     </div>
+
+    <ClinicModal
+      :bird="selectedBird"
+      :food-stock="state.foodStock"
+      :visible="clinicVisible"
+      @close="handleCloseClinic"
+      @treat="handleTreat"
+    />
   </div>
 </template>

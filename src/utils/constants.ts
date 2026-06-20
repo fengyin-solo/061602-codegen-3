@@ -1,4 +1,4 @@
-import type { Weather, WeatherEffect, BerryType, GrowthStage, Personality } from '@/types/game'
+import type { Weather, WeatherEffect, BerryType, GrowthStage, Personality, TreatmentType } from '@/types/game'
 
 export const ATTR_MIN = 0
 export const ATTR_MAX = 100
@@ -110,3 +110,76 @@ export const BIRD_NAMES = [
   '糖糖', '圆圆', '小米', '小麦', '云朵', '星星', '月亮', '太阳',
   '小橘', '小蓝', '小绿', '小红', '阿黄', '阿白', '阿黑', '阿灰',
 ]
+
+export interface TreatmentConfig {
+  name: string
+  description: string
+  foodCost: number
+  healthRestore: number
+  growthBoost: number
+  fearReduce: number
+  sickDurationReduce: number
+  color: string
+  gradient: string
+}
+
+export const TREATMENT_CONFIGS: Record<TreatmentType, TreatmentConfig> = {
+  basic: {
+    name: '基础护理',
+    description: '基础的食物和温水，适合轻微不适',
+    foodCost: 15,
+    healthRestore: 15,
+    growthBoost: 0.05,
+    fearReduce: 5,
+    sickDurationReduce: 5000,
+    color: '#10B981',
+    gradient: 'from-emerald-500 to-green-500',
+  },
+  standard: {
+    name: '标准治疗',
+    description: '专业的护理和营养补充',
+    foodCost: 30,
+    healthRestore: 30,
+    growthBoost: 0.1,
+    fearReduce: 10,
+    sickDurationReduce: 10000,
+    color: '#3B82F6',
+    gradient: 'from-blue-500 to-cyan-500',
+  },
+  intensive: {
+    name: '加强治疗',
+    description: '高强度治疗，快速恢复健康',
+    foodCost: 50,
+    healthRestore: 50,
+    growthBoost: 0.15,
+    fearReduce: 15,
+    sickDurationReduce: 15000,
+    color: '#8B5CF6',
+    gradient: 'from-violet-500 to-purple-500',
+  },
+  premium: {
+    name: '特级诊疗',
+    description: '顶级护理套餐，全面调理身心',
+    foodCost: 80,
+    healthRestore: 75,
+    growthBoost: 0.25,
+    fearReduce: 25,
+    sickDurationReduce: 20000,
+    color: '#F59E0B',
+    gradient: 'from-amber-500 to-orange-500',
+  },
+}
+
+export const TREATMENT_EMOJI: Record<TreatmentType, string> = {
+  basic: '💚',
+  standard: '💙',
+  intensive: '💜',
+  premium: '💛',
+}
+
+export const TREATMENT_ICONS: Record<TreatmentType, string> = {
+  basic: '🌿',
+  standard: '💊',
+  intensive: '💉',
+  premium: '✨',
+}

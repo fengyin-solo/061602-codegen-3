@@ -67,7 +67,7 @@ const handleHome = () => {
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4 mb-8">
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
           <div class="bg-white/5 rounded-2xl p-4 text-center border border-white/10">
             <div class="text-3xl mb-2">💚</div>
             <div class="text-white/60 text-xs mb-1">成活率</div>
@@ -91,6 +91,12 @@ const handleHome = () => {
             <div class="text-white/60 text-xs mb-1">照料加成</div>
             <div class="font-bold text-2xl text-amber-400">+{{ score.personalityBonus }}</div>
           </div>
+
+          <div class="bg-white/5 rounded-2xl p-4 text-center border border-white/10">
+            <div class="text-3xl mb-2">🏥</div>
+            <div class="text-white/60 text-xs mb-1">诊疗加成</div>
+            <div class="font-bold text-2xl text-emerald-400">+{{ score.treatmentBonus }}</div>
+          </div>
         </div>
 
         <div class="bg-gradient-to-r from-amber-500/10 to-rose-500/10 rounded-2xl p-5 mb-6 border border-amber-400/20">
@@ -105,6 +111,8 @@ const handleHome = () => {
               <span>💔 离世 {{ state.totalDied }} 只</span>
               <span>💝 繁殖 {{ state.breedingCount }} 窝</span>
               <span>🐦 存活 {{ state.birds.filter(b => !b.isDead).length }} 只</span>
+              <span>🏥 治疗 {{ state.totalTreatments }} 次</span>
+              <span>💊 平均治疗 {{ score.avgTreatmentCount }} 次/只</span>
             </div>
           </div>
         </div>

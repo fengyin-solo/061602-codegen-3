@@ -7,10 +7,11 @@ import {
   BERRY_SPAWN_INTERVAL, BERRY_MAX_COUNT, BERRY_LIFETIME,
   BERRY_VALUES, WEATHER_CHANGE_INTERVAL, WEATHER_EFFECTS,
   DAY_DURATION, INITIAL_FOOD, MIN_EGGS, MAX_EGGS,
-  MAX_BREEDING_ROUNDS, BIRD_NAMES,
+  MAX_BREEDING_ROUNDS, BIRD_NAMES, TREATMENT_CONFIGS,
 } from '@/utils/constants'
 import { randomInt, randomFloat, clamp, randomChoice, generateId, chance } from '@/utils/random'
 import { saveGame, loadGame, clearSave } from '@/utils/storage'
+import type { TreatmentType, TreatmentRecord } from '@/types/game'
 
 const createInitialState = (): GameState => ({
   phase: 'start',
@@ -26,6 +27,8 @@ const createInitialState = (): GameState => ({
   breedingCount: 0,
   maxBreedingRounds: MAX_BREEDING_ROUNDS,
   eventLog: [],
+  treatmentRecords: [],
+  totalTreatments: 0,
 })
 
 const state = reactive<GameState>(createInitialState())
@@ -76,6 +79,8 @@ const createEgg = (index: number): Bird => {
     isDead: false,
     feedingCount: 0,
     lastFedAt: 0,
+    treatmentCount: 0,
+    growthBoostRemaining: 0,
   }
 }
 
@@ -228,9 +233,16 @@ const updateBird = (bird: Bird, deltaMs: number, weatherEffect: ReturnType<typeo
   if (bird.stage !== 'adult') {
     const stageKey = bird.stage as keyof typeof STAGE_DURATION
     const stageDuration = STAGE_DURATION[stageKey] * DAY_DURATION
-    bird.stageProgress += deltaMs / stageDuration
 
     const healthMod = bird.health / 100
+    const growthBoostMod = 1 + bird.growthBoostRemaining
+    const baseProgress = deltaMs / stageDuration
+    bird.stageProgress += baseProgress * growthBoostMod
+
+    if (bird.growthBoostRemaining > 0) {
+      bird.growthBoostRemaining = Math.max(0, bird.growthBoostRemaining - (deltaMs / (DAY_DURATION * 3)))
+    }
+
     if (bird.stageProgress * healthMod >= 1) {
       growBird(bird)
     }
@@ -359,6 +371,56 @@ const calmBird = (birdId: string): boolean => {
   return true
 }
 
+const treatBird = (birdId: string, treatmentType: TreatmentType): boolean => {
+  const bird = state.birds.find(b => b.id === birdId)
+  if (!bird || bird.isDead || bird.isAway || bird.stage === 'egg') return false
+
+  const config = TREATMENT_CONFIGS[treatmentType]
+  if (state.foodStock < config.foodCost) return false
+
+  state.foodStock -= config.foodCost
+
+  const actualHealthRestore = Math.min(
+    config.healthRestore,
+    ATTR_MAX - bird.health
+  )
+  bird.health = clamp(bird.health + config.healthRestore, ATTR_MIN, ATTR_MAX)
+
+  bird.fear = clamp(bird.fear - config.fearReduce, ATTR_MIN, ATTR_MAX)
+
+  bird.growthBoostRemaining += config.growthBoost
+
+  if (bird.isSick && bird.sickUntil) {
+    bird.sickUntil = Math.max(Date.now(), bird.sickUntil - config.sickDurationReduce)
+  }
+
+  bird.treatmentCount++
+  bird.lastTreatedAt = Date.now()
+  bird.isTreated = true
+
+  const record: TreatmentRecord = {
+    id: generateId(),
+    birdId,
+    treatmentType,
+    timestamp: Date.now(),
+    healthRestored: actualHealthRestore,
+    growthBoost: config.growthBoost,
+  }
+  state.treatmentRecords.push(record)
+  state.totalTreatments++
+
+  setTimeout(() => {
+    if (bird) bird.isTreated = false
+  }, 2000)
+
+  addEventLog(
+    `🏥 ${bird.name} 接受了${config.name}治疗，恢复了 ${actualHealthRestore} 点健康！`,
+    'success'
+  )
+
+  return true
+}
+
 const allAdults = computed(() => {
   const alive = state.birds.filter(b => !b.isDead)
   return alive.length > 0 && alive.every(b => b.stage === 'adult')
@@ -422,11 +484,25 @@ const calculateScore = (): GameScore => {
     ? aliveBirds.reduce((s, b) => s + (b.feedingCount > 10 ? 5 : 2), 0)
     : 0
 
+  const totalTreatments = state.totalTreatments
+  const avgTreatmentCount = aliveBirds.length > 0
+    ? aliveBirds.reduce((s, b) => s + b.treatmentCount, 0) / aliveBirds.length
+    : 0
+  const sickBirdsTreated = state.treatmentRecords.filter(r => {
+    const bird = state.birds.find(b => b.id === r.birdId)
+    return bird && !bird.isDead
+  }).length
+  const treatmentBonus = Math.min(
+    totalTreatments * 3 + sickBirdsTreated * 8 + avgTreatmentCount * 5,
+    30
+  )
+
   const totalScore = Math.round(
     survivalRate * 40 +
     avgHealth * 0.3 +
     breedingBonus +
-    personalityBonus
+    personalityBonus +
+    treatmentBonus
   )
 
   let stars = 1
@@ -447,6 +523,8 @@ const calculateScore = (): GameScore => {
     avgHealth: Math.round(avgHealth),
     breedingBonus,
     personalityBonus,
+    treatmentBonus,
+    avgTreatmentCount: Math.round(avgTreatmentCount * 10) / 10,
     stars,
     rank,
   }
@@ -498,6 +576,7 @@ export function useGameState() {
     collectBerry,
     feedBird,
     calmBird,
+    treatBird,
     buryBird,
     releaseBirds,
     keepAndBreed,
